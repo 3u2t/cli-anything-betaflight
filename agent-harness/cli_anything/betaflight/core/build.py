@@ -1,4 +1,4 @@
-"""Toolchain detection and build/flash orchestration for a Betaflight checkout."""
+"""Toolchain lookup and firmware build/flash helpers."""
 
 from __future__ import annotations
 

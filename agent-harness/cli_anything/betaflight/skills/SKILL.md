@@ -1,22 +1,21 @@
 ---
 name: cli-anything-betaflight
 description: >
-  Agent-native CLI for the Betaflight flight-controller firmware. Inspect the
+  Command-line tool for the Betaflight flight-controller firmware. Inspect the
   source tree (boards, MCUs, pin maps, features), build and flash firmware from
-  source, and read or change a connected controller over MSP. Use it whenever a
-  task concerns Betaflight board configs, firmware builds, or flight-controller
-  settings.
+  source, and read or change a connected controller over MSP. Use it for
+  Betaflight board configs, firmware builds, or flight-controller settings.
 ---
 
 # cli-anything-betaflight
 
-A CLI-Anything harness for the [Betaflight](https://github.com/betaflight/betaflight)
+A command-line tool for the [Betaflight](https://github.com/betaflight/betaflight)
 source tree and the flight controllers it runs on.
 
 ## Installation
 
 ```bash
-cd betaflight-cli/agent-harness
+cd agent-harness
 pip install -e .
 ```
 
@@ -69,7 +68,7 @@ Everything works as a one-shot command or in the REPL (run without arguments).
 | `build clean [BOARD] --yes` | remove build products |
 | `build flash BOARD --method dfu\|serial --yes` | flash firmware |
 
-> Betaflight's makefiles reject paths containing a space. The harness detects
+> Betaflight's makefiles reject paths containing a space. The tool detects
 > MSYS2 (`C:\msys64`), runs `make` through its bash, and automatically uses a
 > space-free junction (`C:\betaflight`) when the checkout itself is under a
 > spaced path. The exact ARM toolchain (GCC 13.3.1) is installed with
@@ -141,7 +140,7 @@ Write paths are opt-in and never persist by accident:
   `device flash` all require `--yes`.
 * Motor test stops the motor in a `finally` block even if the read fails.
 
-## Agent workflow
+## Workflow
 
 Read first, change later:
 
