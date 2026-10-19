@@ -1,4 +1,4 @@
-"""cli-anything-betaflight - agent-native CLI for the Betaflight source tree."""
+"""cli-anything-betaflight - command-line interface for the Betaflight source tree."""
 
 from __future__ import annotations
 

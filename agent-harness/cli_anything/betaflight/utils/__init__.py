@@ -1,1 +1,1 @@
-"""Utilities for the Betaflight harness."""
+"""Utility modules."""

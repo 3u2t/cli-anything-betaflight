@@ -1,1 +1,1 @@
-"""Core logic for the Betaflight harness."""
+"""Core logic."""

@@ -43,9 +43,7 @@ AUX_LINE_RE = re.compile(r"^aux\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)"
 FEATURE_SECTION_RE = re.compile(r"^(Enabled|Available|Unavailable):\s*(.*)$")
 
 
-# --------------------------------------------------------------------------- #
-# Pure parsers (used by the CLI and directly by the tests)
-# --------------------------------------------------------------------------- #
+# Parsers
 
 def parse_settings(text: str) -> list[dict]:
     """Parse ``name = value`` lines from ``get``/``diff`` output."""
@@ -304,7 +302,7 @@ class Device:
     def cli(self, command_line: str, timeout: float = 10.0) -> str:
         return self.client.cli_command(command_line, timeout=timeout)
 
-    # -- GUI-style configuration domains -----------------------------------
+    # Configuration commands
 
     def settings(self, prefix: str = "") -> list[dict]:
         """All firmware settings, optionally filtered by a name fragment."""
@@ -404,7 +402,7 @@ class Device:
         self.client.request(msp.MSP_ACC_CALIBRATION)
         return {"calibrated": True, "note": "keep the craft level and still"}
 
-    # -- actions that change the controller --------------------------------
+    # Commands that change the controller
 
     def save(self) -> dict:
         self.client.request(msp.MSP_EEPROM_WRITE)
