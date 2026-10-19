@@ -1,0 +1,8 @@
+cli-anything-betaflight
+Copyright 2026 3u2t
+
+This product includes software developed by the CLI-Anything project
+(https://github.com/HKUDS/CLI-Anything), licensed under the Apache License 2.0.
+
+The file agent-harness/cli_anything/betaflight/utils/repl_skin.py is an
+unmodified copy of the CLI-Anything REPL skin.
