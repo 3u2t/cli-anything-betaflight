@@ -1,8 +1,3 @@
-"""Unit tests for the CLI core: MSP framing/paging and config.h parsing.
-
-No backend software, compiler or flight controller is required.
-"""
-
 from __future__ import annotations
 
 import struct
@@ -28,8 +23,6 @@ def _v2_response(command: int, payload: bytes = b"", flags: int = 0) -> bytes:
 
 
 class FakeTransport:
-    """Feeds scripted bytes back to the client; records what was written."""
-
     def __init__(self, handler):
         self.handler = handler
         self.written: list[bytes] = []
@@ -49,8 +42,6 @@ class FakeTransport:
         return chunk
 
     def reset_input(self) -> None:
-        # Called before each request; a fake that answered immediately would
-        # otherwise lose its response, so keep the queue.
         pass
 
     def close(self) -> None:
@@ -173,14 +164,12 @@ def test_msp2_cli_refused():
 
 
 def test_legacy_cli_fallback():
-    """MSP2 CLI unknown -> MSP_CLI 217 -> raw text prompt."""
     state = {"entered": False}
 
     def handler(data: bytes) -> bytes:
         if data.startswith(b"$X<"):
-            return b"$M!"  # firmware without MSP2 CLI support
+            return b"$M!"
         if not data.startswith(b"$"):
-            # raw text after the legacy CLI prompt
             text = data.decode()
             if text.startswith("version"):
                 return b"version\r\nBetaflight 2026.12.0\r\n# "

@@ -1,5 +1,3 @@
-"""Tests for the GUI-style configuration layer (no hardware needed)."""
-
 from __future__ import annotations
 
 import struct
@@ -13,7 +11,7 @@ from cli_anything.betaflight.core import source
 
 try:
     REAL_REPO = source.find_repo()
-except source.RepoError:  # pragma: no cover
+except source.RepoError:
     REAL_REPO = None
 
 
@@ -105,8 +103,6 @@ def test_destructive_detection_allows_read_commands():
 
 
 def test_cli_guards_before_opening_a_port(monkeypatch, tmp_path):
-    """Write commands must fail on the guard, not on a missing controller."""
-
     def boom(*_args, **_kwargs):
         raise AssertionError("the CLI opened a serial port before the guard")
 

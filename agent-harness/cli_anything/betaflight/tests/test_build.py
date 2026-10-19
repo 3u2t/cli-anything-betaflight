@@ -1,5 +1,3 @@
-"""Tests for toolchain discovery and MSYS2 build plumbing (no compiler needed)."""
-
 from __future__ import annotations
 
 from pathlib import Path

@@ -1,5 +1,3 @@
-"""Toolchain lookup and firmware build/flash helpers."""
-
 from __future__ import annotations
 
 import json
@@ -21,7 +19,7 @@ MSYS2_CANDIDATES = (
 
 
 class ToolchainError(RuntimeError):
-    """Raised when a build or flash cannot start."""
+    pass
 
 
 def _which(name: str) -> str | None:
@@ -46,7 +44,6 @@ def _version(command: list[str]) -> str | None:
 
 
 def find_msys2() -> Path | None:
-    """Locate an MSYS2 installation (bash.exe is the reliable marker)."""
     candidates = []
     override = os.environ.get("BETAFLIGHT_MSYS2")
     if override:
@@ -60,7 +57,6 @@ def find_msys2() -> Path | None:
 
 
 def to_msys_path(path: Path) -> str:
-    """C:\\betaflight -> /c/betaflight (no resolve(): keep junctions intact)."""
     text = str(path).replace("\\", "/")
     match = re.match(r"^([A-Za-z]):/(.*)$", text)
     if match:
@@ -118,7 +114,6 @@ def find_make() -> str | None:
 
 
 def space_free_alias(repo: Path) -> Path | None:
-    """A junction/symlink to repo whose path has no spaces, if one exists."""
     try:
         target = repo.resolve()
     except OSError:

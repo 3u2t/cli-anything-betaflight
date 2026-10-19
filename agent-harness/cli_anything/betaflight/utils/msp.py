@@ -1,25 +1,9 @@
-"""MSP (MultiWii Serial Protocol) v1/v2 client for Betaflight flight controllers.
-
-The framing and command ids in this module mirror the Betaflight firmware source
-(``src/main/msp/msp_protocol.h`` and ``msp_protocol_v2_betaflight.h``).
-
-Two ways of running the firmware's own CLI are supported:
-
-* ``MSP2_CLI_COMMAND`` (``0x3012``) - the modern paged request/response API used
-  by current Betaflight releases.
-* ``MSP_CLI`` (``217``) - the legacy mode that switches the serial link to raw
-  text until ``exit`` is sent. Used as a fallback for older firmware.
-
-Only read-only traffic happens unless the caller explicitly asks for a write.
-"""
-
 from __future__ import annotations
 
 import struct
 import time
 from dataclasses import dataclass
 
-# --- MSP v1 command ids -----------------------------------------------------
 
 MSP_API_VERSION = 1
 MSP_FC_VARIANT = 2
@@ -42,7 +26,6 @@ MSP_SET_MOTOR = 214
 MSP_CLI = 217
 MSP_EEPROM_WRITE = 250
 
-# --- MSP v2 command ids -----------------------------------------------------
 
 MSP2_CLI_SETTING = 0x3010
 MSP2_CLI_SETTING_INFO = 0x3011
@@ -57,27 +40,26 @@ MSP_V2_MAX_PAYLOAD = 0xFFFF
 
 
 class MspError(RuntimeError):
-    """Base class for MSP failures."""
+    pass
 
 
 class MspTimeout(MspError):
-    """No complete frame arrived before the deadline."""
+    pass
 
 
 class MspCommandError(MspError):
-    """The flight controller answered with an error frame (``$M!``)."""
+    pass
 
 
 class MspChecksumError(MspError):
-    """A frame failed its checksum."""
+    pass
 
 
 class MspRefused(MspError):
-    """The firmware refused a CLI command."""
+    pass
 
 
 def crc8_dvb_s2(data: bytes) -> int:
-    """CRC-8/DVB-S2 as used by MSP v2."""
     crc = 0
     for byte in data:
         crc ^= byte
@@ -87,7 +69,6 @@ def crc8_dvb_s2(data: bytes) -> int:
 
 
 def encode_v1(command: int, payload: bytes = b"") -> bytes:
-    """Build an MSP v1 request frame."""
     if not 0 <= command <= MSP_V1_MAX_COMMAND:
         raise ValueError(f"MSP v1 command out of range: {command}")
     if len(payload) > MSP_V1_MAX_PAYLOAD:
@@ -100,7 +81,6 @@ def encode_v1(command: int, payload: bytes = b"") -> bytes:
 
 
 def encode_v2(command: int, payload: bytes = b"", flags: int = 0) -> bytes:
-    """Build an MSP v2 request frame."""
     if len(payload) > MSP_V2_MAX_PAYLOAD:
         raise ValueError("MSP v2 payload too large")
     body = struct.pack("<BHH", flags, command, len(payload)) + payload
@@ -116,10 +96,8 @@ class MspFrame:
 
 
 class SerialTransport:
-    """Thin pyserial wrapper; swapped for a fake in the tests."""
-
     def __init__(self, port: str, baudrate: int = 115200, read_timeout: float = 0.05):
-        import serial  # imported lazily so parsing commands work without hardware
+        import serial
 
         self.port = port
         self.ser = serial.Serial(
@@ -142,13 +120,11 @@ class SerialTransport:
     def close(self) -> None:
         try:
             self.ser.close()
-        except Exception:  # pragma: no cover - best effort on unplug
+        except Exception:
             pass
 
 
 class MspClient:
-    """MSP client that speaks v1 and v2 and can run the firmware CLI."""
-
     def __init__(self, transport, default_timeout: float = 3.0, settle: float = 0.01):
         self.transport = transport
         self.default_timeout = default_timeout
@@ -156,7 +132,6 @@ class MspClient:
         self._cli_mode: str | None = None
         self.api_version: tuple[int, int, int] | None = None
 
-    # -- low level ---------------------------------------------------------
 
     def _read_exact(self, size: int, deadline: float) -> bytes:
         chunks = bytearray()
@@ -233,7 +208,6 @@ class MspClient:
             time.sleep(self.settle)
         return self._read_frame(timeout)
 
-    # -- public requests ---------------------------------------------------
 
     def request_v1(
         self, command: int, payload: bytes = b"", timeout: float | None = None
@@ -256,7 +230,6 @@ class MspClient:
             return self.request_v1(command, payload, timeout)
         return self.request_v2(command, payload, timeout)
 
-    # -- familiar Betaflight calls ----------------------------------------
 
     def ping(self) -> tuple[int, int, int]:
         frame = self.request(MSP_API_VERSION)
@@ -381,8 +354,6 @@ class MspClient:
                 "profile": profile,
             }
 
-        # Newer firmware widened the I2C counter to u16; older used u8 with a
-        # padding byte. Profile indexes are small, so sanity-check the layout.
         newer = decode(2)
         older = decode(1)
         if 0 <= newer["profile"] <= 8:
@@ -395,10 +366,8 @@ class MspClient:
             data.update(newer)
         return data
 
-    # -- firmware CLI ------------------------------------------------------
 
     def cli_command(self, command_line: str, timeout: float = 8.0) -> str:
-        """Run one firmware CLI command and return its text output."""
         if self._cli_mode == "legacy":
             return self._cli_legacy(command_line, timeout)
         try:
@@ -480,7 +449,6 @@ class MspClient:
 
 
 def split_setting(text: str) -> tuple[str, str] | None:
-    """Split ``name = value`` from a CLI/setting response."""
     if "=" not in text:
         return None
     name, value = text.split("=", 1)

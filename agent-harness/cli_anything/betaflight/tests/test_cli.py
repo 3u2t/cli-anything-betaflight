@@ -1,5 +1,3 @@
-"""Click-level tests for the Betaflight harness."""
-
 from __future__ import annotations
 
 import json
@@ -12,7 +10,7 @@ from cli_anything.betaflight.betaflight_cli import cli
 
 try:
     REAL_REPO = source.find_repo()
-except source.RepoError:  # pragma: no cover - depends on the machine
+except source.RepoError:
     REAL_REPO = None
 
 pytestmark = pytest.mark.skipif(REAL_REPO is None, reason="no Betaflight checkout")

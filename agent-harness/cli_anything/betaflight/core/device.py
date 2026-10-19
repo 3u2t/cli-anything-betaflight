@@ -1,5 +1,3 @@
-"""Talk to a Betaflight flight controller over USB serial (MSP)."""
-
 from __future__ import annotations
 
 import re
@@ -15,10 +13,9 @@ from cli_anything.betaflight.utils import msp
 
 STM32_VID = 0x0483
 STM32_VCP_PID = 0x5740
-# Flight controllers that expose their own USB ids instead of ST's VCP.
 OTHER_FC_IDS = {
-    (0x1209, 0x4D44),  # pid.codes test id used by some boards
-    (0x2E8A, 0x000A),  # Raspberry Pi Pico (some targets)
+    (0x1209, 0x4D44),
+    (0x2E8A, 0x000A),
     (0x1EAF, 0x0003),
 }
 
@@ -26,7 +23,7 @@ DESTRUCTIVE_CLI = (
     "defaults",
     "erase",
     "flash_erase",
-    "flash_info",  # read-only, listed for clarity below
+    "flash_info",
     "save",
     "bl",
     "dfu",
@@ -35,7 +32,6 @@ DESTRUCTIVE_CLI = (
     "reset",
 )
 
-# Commands that are safe even though they share a prefix with a blocked one.
 READ_ONLY_ALLOWED = {"flash_info"}
 
 SETTING_LINE_RE = re.compile(r"^([A-Za-z0-9_]+)\s*=\s*(.*)$")
@@ -43,10 +39,7 @@ AUX_LINE_RE = re.compile(r"^aux\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)"
 FEATURE_SECTION_RE = re.compile(r"^(Enabled|Available|Unavailable):\s*(.*)$")
 
 
-# Parsers
-
 def parse_settings(text: str) -> list[dict]:
-    """Parse ``name = value`` lines from ``get``/``diff`` output."""
     settings = []
     for raw in text.splitlines():
         line = raw.strip()
@@ -59,7 +52,6 @@ def parse_settings(text: str) -> list[dict]:
 
 
 def parse_features(text: str) -> dict:
-    """Parse ``Enabled: A B`` / ``Available: ...`` from ``feature``."""
     result = {"enabled": [], "available": [], "unavailable": []}
     for raw in text.splitlines():
         match = FEATURE_SECTION_RE.match(raw.strip())
@@ -70,7 +62,6 @@ def parse_features(text: str) -> dict:
 
 
 def parse_aux(text: str) -> list[dict]:
-    """Parse ``aux <index> <mode> <aux> <start> <end> <logic>`` lines."""
     modes = []
     for raw in text.splitlines():
         match = AUX_LINE_RE.match(raw.strip())
@@ -91,7 +82,6 @@ def parse_aux(text: str) -> list[dict]:
 
 
 def restore_commands(text: str) -> list[str]:
-    """Commands from a dump/backup, without comments, blanks or ``save``."""
     commands = []
     for raw in text.splitlines():
         line = raw.strip()
@@ -104,7 +94,6 @@ def restore_commands(text: str) -> list[str]:
 
 
 def build_motor_payload(motor: int, throttle: int, motor_count: int = 8) -> bytes:
-    """MSP_SET_MOTOR payload: 8 throttle values, selected motor spun up."""
     if not 1 <= motor <= motor_count:
         raise DeviceError(f"motor must be between 1 and {motor_count}")
     if not 1000 <= throttle <= 2000:
@@ -119,7 +108,7 @@ def stop_motor_payload(motor_count: int = 8) -> bytes:
 
 
 class DeviceError(RuntimeError):
-    """Raised when no flight controller can be reached."""
+    pass
 
 
 @dataclass
@@ -189,8 +178,6 @@ def pick_port(explicit: str | None = None) -> str:
 
 
 class Device:
-    """High-level read/write actions against a connected flight controller."""
-
     def __init__(self, port: str | None = None, baudrate: int = 115200, timeout: float = 3.0):
         self.port_name = pick_port(port)
         self.baudrate = baudrate
@@ -206,7 +193,6 @@ class Device:
     def close(self) -> None:
         self.client.close()
 
-    # -- information -------------------------------------------------------
 
     def info(self) -> dict:
         protocol, major, minor = self.client.ping()
@@ -256,7 +242,6 @@ class Device:
             return []
         return [name for bit, name in enumerate(names) if flags & (1 << bit)]
 
-    # -- configuration -----------------------------------------------------
 
     def config_get(self, name: str) -> dict:
         try:
@@ -277,7 +262,6 @@ class Device:
         raise DeviceError(f"Setting '{name}' not found on the flight controller")
 
     def config_set(self, name: str, value: str) -> dict:
-        """Write a setting to RAM. The caller must persist it with save()."""
         payload = f"{name} = {value}".encode("utf-8")
         try:
             frame = self.client.request_v2(msp.MSP2_CLI_SETTING, payload)
@@ -302,10 +286,8 @@ class Device:
     def cli(self, command_line: str, timeout: float = 10.0) -> str:
         return self.client.cli_command(command_line, timeout=timeout)
 
-    # Configuration commands
 
     def settings(self, prefix: str = "") -> list[dict]:
-        """All firmware settings, optionally filtered by a name fragment."""
         text = self.client.cli_command(f"get {prefix}".strip(), timeout=30.0)
         return parse_settings(text)
 
@@ -381,10 +363,8 @@ class Device:
                 errors.append({"command": command, "error": output.strip()})
         return {"executed": len(executed), "errors": errors, "commands": executed}
 
-    # -- hardware actions --------------------------------------------------
 
     def motor_test(self, motor: int, throttle: int = 1050, seconds: float = 2.0) -> dict:
-        """Spin one motor briefly via MSP_SET_MOTOR, always stopping again."""
         payload = build_motor_payload(motor, throttle)
         self.client.request(msp.MSP_SET_MOTOR, payload)
         try:
@@ -402,7 +382,6 @@ class Device:
         self.client.request(msp.MSP_ACC_CALIBRATION)
         return {"calibrated": True, "note": "keep the craft level and still"}
 
-    # Commands that change the controller
 
     def save(self) -> dict:
         self.client.request(msp.MSP_EEPROM_WRITE)
@@ -439,7 +418,6 @@ def guard_command(command_line: str, force: bool) -> None:
 
 
 def dfu_flash(firmware: Path) -> dict:
-    """Flash a .hex/.bin with dfu-util (controller must be in DFU mode)."""
     binary = build_core.find_dfu()
     if not binary:
         raise DeviceError(

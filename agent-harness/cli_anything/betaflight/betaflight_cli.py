@@ -1,5 +1,3 @@
-"""cli-anything-betaflight - command-line interface for the Betaflight source tree."""
-
 from __future__ import annotations
 
 import json
@@ -54,10 +52,6 @@ COMMANDS = {
 }
 
 
-# --------------------------------------------------------------------------- #
-# Output helpers
-# --------------------------------------------------------------------------- #
-
 def _emit(ctx: click.Context, data, lines: list[str] | None = None) -> None:
     if ctx.obj.get("json"):
         click.echo(json.dumps(data, indent=2, default=str))
@@ -104,10 +98,6 @@ def _human_size(size: int) -> str:
     return f"{size / 1024:.1f} KB"
 
 
-# --------------------------------------------------------------------------- #
-# Root group
-# --------------------------------------------------------------------------- #
-
 @click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
 @click.option("--repo", "repo_path", default=None, type=click.Path(),
               help="Betaflight checkout (default: auto-detect)")
@@ -147,10 +137,6 @@ def _require_repo(ctx: click.Context) -> Path:
         raise click.ClickException(ctx.obj.get("repo_error") or "No Betaflight checkout")
     return ctx.obj["repo"]
 
-
-# --------------------------------------------------------------------------- #
-# repo
-# --------------------------------------------------------------------------- #
 
 @cli.group()
 def repo():
@@ -232,10 +218,6 @@ def repo_doctor(ctx):
         lines.extend(["", data["build_hint"]])
     _emit(ctx, data, lines)
 
-
-# --------------------------------------------------------------------------- #
-# boards
-# --------------------------------------------------------------------------- #
 
 @cli.group()
 def boards():
@@ -388,10 +370,6 @@ def boards_manufacturers(ctx):
     _emit(ctx, counts, lines)
 
 
-# --------------------------------------------------------------------------- #
-# build
-# --------------------------------------------------------------------------- #
-
 @cli.group()
 def build():
     """Compile and flash firmware from source."""
@@ -524,10 +502,6 @@ def build_flash(ctx, board, method, serial_device, yes):
     _emit(ctx, result, [f"flash exit {result['returncode']}"])
 
 
-# --------------------------------------------------------------------------- #
-# device
-# --------------------------------------------------------------------------- #
-
 @cli.group()
 def device():
     """Talk to a connected flight controller over MSP."""
@@ -540,7 +514,7 @@ def _open_device(ctx) -> device_core.Device:
             baudrate=ctx.obj.get("baud", 115200),
             timeout=ctx.obj.get("msp_timeout", 3.0),
         )
-    except Exception as exc:  # serial.SerialException, DeviceError, ...
+    except Exception as exc:
         raise click.ClickException(device_core.describe_connection_error(exc))
 
 
@@ -959,10 +933,6 @@ def device_reboot(ctx, yes):
     _emit(ctx, data, ["reboot requested"])
 
 
-# --------------------------------------------------------------------------- #
-# REPL
-# --------------------------------------------------------------------------- #
-
 @cli.command("repl")
 @click.pass_context
 def repl(ctx):
@@ -1016,18 +986,12 @@ def repl(ctx):
             skin.error(exc.format_message())
         except SystemExit:
             pass
-        except Exception as exc:  # keep the REPL alive
+        except Exception as exc:
             skin.error(str(exc))
     skin.print_goodbye()
 
 
-# --------------------------------------------------------------------------- #
-# entry point
-# --------------------------------------------------------------------------- #
-
 def main(argv: list[str] | None = None) -> int:
-    # Windows consoles often default to cp1252; the REPL skin draws box
-    # characters, so force UTF-8 where the stream allows it.
     for stream in (sys.stdout, sys.stderr):
         try:
             stream.reconfigure(encoding="utf-8", errors="replace")

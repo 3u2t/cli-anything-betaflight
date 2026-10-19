@@ -1,10 +1,3 @@
-"""Opt-in tests against a real flight controller (read-only).
-
-Run with:
-    set BETAFLIGHT_E2E_PORT=COM4
-    pytest cli_anything/betaflight/tests/test_full_e2e.py
-"""
-
 from __future__ import annotations
 
 import os

@@ -1,12 +1,3 @@
-"""Read a Betaflight source checkout: repo state, boards, validation, diffs.
-
-Betaflight keeps board defaults in the ``src/config`` submodule:
-
-    src/config/configs/<MANUFACTURER_ID>/<BOARD>/config.h
-
-Older trees also use a flat ``configs/<BOARD>/config.h`` layout; both are read.
-"""
-
 from __future__ import annotations
 
 import os
@@ -24,7 +15,6 @@ LINE_COMMENT_RE = re.compile(r"//.*$", re.M)
 
 REQUIRED_DEFINES = ("FC_TARGET_MCU", "BOARD_NAME", "MANUFACTURER_ID")
 
-# Used when a checkout has no boards hydrated yet.
 KNOWN_MCUS = {
     "STM32F405", "STM32F411", "STM32F446", "STM32F722", "STM32F745",
     "STM32F765", "STM32G47X", "STM32H723", "STM32H725", "STM32H730",
@@ -35,7 +25,7 @@ KNOWN_MCUS = {
 
 
 class RepoError(RuntimeError):
-    """Raised when a Betaflight checkout cannot be used."""
+    pass
 
 
 @dataclass
@@ -96,7 +86,6 @@ def _clean_source(text: str) -> str:
 
 
 def parse_defines(text: str) -> dict[str, str]:
-    """Parse object-like #defines, ignoring function-like macros."""
     defines: dict[str, str] = {}
     for line in _clean_source(text).splitlines():
         match = DEFINE_RE.match(line)
@@ -108,7 +97,6 @@ def parse_defines(text: str) -> dict[str, str]:
 
 
 def find_repo(start: Path | str | None = None) -> Path:
-    """Locate a Betaflight checkout (contains Makefile + src/main/cli)."""
     env = os.environ.get("BETAFLIGHT_REPO")
     candidates: list[Path] = []
     if start:
@@ -123,7 +111,6 @@ def find_repo(start: Path | str | None = None) -> Path:
         candidates.append(root / "upstream" / "betaflight")
     for candidate in candidates:
         try:
-            # abspath, not resolve(): keep junctions like C:\betaflight intact.
             candidate = Path(os.path.abspath(candidate.expanduser()))
         except OSError:
             continue
@@ -164,8 +151,6 @@ def git_info(repo: Path) -> dict:
 
 
 class BoardIndex:
-    """Lazily parsed index of every board config in a checkout."""
-
     def __init__(self, repo: Path):
         self.repo = repo
         self.config_dir = repo / "src" / "config" / "configs"
@@ -214,7 +199,7 @@ class BoardIndex:
 
     def get(self, name: str) -> Board:
         self.load()
-        matches = self._by_name.get(name.upper(), [])  # type: ignore[union-attr]
+        matches = self._by_name.get(name.upper(), [])
         if not matches:
             raise RepoError(f"Unknown board '{name}'")
         if len(matches) > 1:
@@ -262,7 +247,6 @@ class BoardIndex:
             counts[key] = counts.get(key, 0) + 1
         return dict(sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])))
 
-    # -- validation --------------------------------------------------------
 
     def validate(self, board: Board | None = None) -> list[Issue]:
         boards = [board] if board else self.all()
@@ -336,7 +320,6 @@ class BoardIndex:
 
 
 def diff_boards(a: Board, b: Board) -> dict:
-    """Compare two board configs."""
     keys = sorted(set(a.defines) | set(b.defines))
     added, removed, changed = [], [], []
     for key in keys:
